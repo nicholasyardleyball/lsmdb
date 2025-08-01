@@ -5,7 +5,7 @@
 
 struct rb_node{
 	struct rb_node *parent, *left, *right;
-	uint16_t key;
+	uint16_t key, value;
 	uint16_t color;
 };
 
@@ -22,31 +22,44 @@ static void rb_right_rotate(struct rb_tree *tree, struct rb_node *node);
 static void rb_transplant(struct rb_tree *tree, struct rb_node *old, struct rb_node *new);
 static int rb_red(struct rb_node *node);
 
-void rb_insert(struct rb_tree *tree, struct rb_node *to_insert)
+int rb_insert(struct rb_tree *tree, uint16_t key, uint16_t value)
 {
 	struct rb_node *node = tree->root;
 	struct rb_node *parent = 0;
 
 	while (node) {
 		parent = node;
-		node = (to_insert->key < node->key) ? node->left : node->right;
+
+		if (node->key == key) {
+			node->value = value;
+			return 0;
+		}
+
+		node = (key < node->key) ? node->left : node->right;
 	}
 
+	struct rb_node *to_insert = malloc(sizeof(*to_insert));
+
+	if (!to_insert)
+		return -1;
+
+	to_insert->key = key;
+	to_insert->value = value;
 	to_insert->parent = parent;
+	to_insert->left = to_insert->right = 0;
+	to_insert->color = RED;
 
 	if (!parent)
 		tree->root = to_insert;
 
-	else if (to_insert->key < parent->key)
+	else if (key < parent->key)
 		parent->left = to_insert;
 
 	else
 		parent->right = to_insert;
 
-	to_insert->left = to_insert->right = 0;
-	to_insert->color = RED;
-
 	rb_insert_fixup(tree, to_insert);
+	return 0;
 }
 
 static void rb_insert_fixup(struct rb_tree *tree, struct rb_node *node)
@@ -110,10 +123,14 @@ static void rb_insert_fixup(struct rb_tree *tree, struct rb_node *node)
 	tree->root->color = BLACK;
 }
 
-void rb_delete(struct rb_tree *tree, struct rb_node *to_delete)
+int rb_delete(struct rb_tree *tree, uint16_t key)
 {
-	struct rb_node *successor, *parent, *child;
-	successor = parent = child = 0;
+	struct rb_node *to_delete = 0, *successor = 0, *parent = 0, *child = 0;
+
+	to_delete = rb_find(tree, key);
+
+	if (!to_delete)
+		return -1;
 
 	int original_color = to_delete->color;
 
@@ -158,9 +175,12 @@ void rb_delete(struct rb_tree *tree, struct rb_node *to_delete)
 	}
 
 	to_delete->parent = to_delete->left = to_delete->right = 0;
+	free(to_delete);
 
 	if (original_color == BLACK)
 		rb_delete_fixup(tree, child, parent);
+
+	return 0;
 }
 
 static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *child, struct rb_node *parent)
@@ -241,6 +261,20 @@ static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *child, struct 
 
 	if (child)
 		child->color = BLACK;
+}
+
+struct rb_node *rb_find(struct rb_tree *tree, uint16_t key)
+{
+	struct rb_node *node = tree->root;
+
+	while (node) {
+		if (node->key == key)
+			return node;
+
+		node = (key < node->key) ? node->left : node->right;
+	}
+
+	return 0;
 }
 
 int rb_verify(struct rb_tree *tree)
