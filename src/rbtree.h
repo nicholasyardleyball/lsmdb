@@ -1,4 +1,6 @@
+#include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 struct rb_node;
@@ -16,3 +18,4 @@ struct rb_node *rb_find(struct rb_tree *tree, uint16_t key);
 
 /* debugging */
 int rb_verify(struct rb_tree *tree);
+void rb_dump(struct rb_tree *tree);

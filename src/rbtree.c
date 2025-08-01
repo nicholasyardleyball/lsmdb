@@ -22,6 +22,7 @@ static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *child, struct 
 
 /* debugging */
 static int rb_verify_node(struct rb_node *node, int *black_height);
+static void rb_print(struct rb_node *node, unsigned depth);
 
 /* utilities */
 static void rb_left_rotate(struct rb_tree *tree, struct rb_node *node);
@@ -363,6 +364,26 @@ static int rb_verify_node(struct rb_node *node, int *black_height)
 
 	*black_height = left_black_height + (node->color == BLACK);
 	return 0;
+}
+
+void rb_dump(struct rb_tree *tree)
+{
+	rb_print(tree->root, 0);
+}
+
+static void rb_print(struct rb_node *node, unsigned depth)
+{
+	if (!node)
+		return;
+
+	rb_print(node->right, depth + 1);
+
+	for (size_t i = 0; i < depth; i++)
+		printf("        ");
+
+	printf("[%c]%05u:%05u\n", (node->color == RED) ? 'R' : 'B', node->key, node->value);
+
+	rb_print(node->left, depth + 1);
 }
 
 static void rb_left_rotate(struct rb_tree *tree, struct rb_node *node)
