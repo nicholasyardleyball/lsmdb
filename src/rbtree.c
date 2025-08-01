@@ -13,14 +13,60 @@ struct rb_tree {
 	struct rb_node *root;
 };
 
+/* tree lifecycle */
+static void rb_free_node(struct rb_node *node);
+
+/* modification and lookup */
 static void rb_insert_fixup(struct rb_tree *tree, struct rb_node *node);
 static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *child, struct rb_node *parent);
+
+/* debugging */
 static int rb_verify_node(struct rb_node *node, int *black_height);
 
+/* utilities */
 static void rb_left_rotate(struct rb_tree *tree, struct rb_node *node);
 static void rb_right_rotate(struct rb_tree *tree, struct rb_node *node);
 static void rb_transplant(struct rb_tree *tree, struct rb_node *old, struct rb_node *new);
 static int rb_red(struct rb_node *node);
+
+struct rb_tree *rb_create(void)
+{
+	struct rb_tree *tree = malloc(sizeof(*tree));
+
+	if (!tree)
+		return 0;
+
+	tree->root = 0;
+	return tree;
+}
+
+void rb_clear(struct rb_tree *tree)
+{
+	if (!tree)
+		return;
+
+	rb_free_node(tree->root);
+	tree->root = 0;
+}
+
+void rb_destroy(struct rb_tree *tree)
+{
+	if (!tree)
+		return;
+
+	rb_free_node(tree->root);
+	free(tree);
+}
+
+static void rb_free_node(struct rb_node *node)
+{
+	if (!node)
+		return;
+
+	rb_free_node(node->left);
+	rb_free_node(node->right);
+	free(node);
+}
 
 int rb_insert(struct rb_tree *tree, uint16_t key, uint16_t value)
 {
