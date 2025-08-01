@@ -1,5 +1,15 @@
 #include "rbtree.h"
 
+struct rb_node{
+	struct rb_node *parent, *left, *right;
+	uint16_t key;
+	uint16_t color;
+};
+
+struct rb_tree {
+	struct rb_node *root;
+};
+
 static void rb_insert_fixup(struct rb_tree *tree, struct rb_node *node);
 static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *child, struct rb_node *parent);
 static int rb_verify_node(struct rb_node *node, int *black_height);
@@ -143,6 +153,8 @@ void rb_delete(struct rb_tree *tree, struct rb_node *to_delete)
 
 		successor->color = to_delete->color;
 	}
+
+	to_delete->parent = to_delete->left = to_delete->right = 0;
 
 	if (original_color == BLACK)
 		rb_delete_fixup(tree, child, parent);
