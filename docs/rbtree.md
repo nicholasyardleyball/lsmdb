@@ -8,10 +8,10 @@ This implementation closely follows the algorithm presented in Cormen, Leiserson
 ### Implementation
 The core algorithm follows the standard description provided in *CLRS*. A small scaffolding layer supports tree lifecycle management, basic test instrumentation, and provisional memory allocation.
 
-One key departure from *CLRS* is the removal of the sentinel nil node. Instead, we use NULL pointers to represent absent children and the parent of the root.
+One key departure from *CLRS* is the removal of the sentinel `nil` node. Instead, we use `NULL` pointers to represent absent children and the parent of the root.
 
 ### Invariants
-Although removing the nil sentinel requires guarding against NULL in some locations, the overall impact on complexity is minimal. In many cases, structural invariants allow us safely to assume the existence of nodes. This is particularly valuable in the insertion and deletion fix-up procedures, where guaranteed relationships simplify control flow and produce a cleaner, more readable implementation.
+Although removing the `nil` sentinel requires guarding against `NULL` in some locations, the overall impact on complexity is minimal. In many cases, structural invariants allow us safely to assume the existence of nodes. This is particularly valuable in the insertion and deletion fix-up procedures, where guaranteed relationships simplify control flow and produce a cleaner, more readable implementation.
 
 *CLRS* provides a formal treatment of these invariants, which remain applicable to this version.
 
