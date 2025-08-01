@@ -2,11 +2,11 @@
 
 static void rb_insert_fixup(struct rb_tree *tree, struct rb_node *node);
 static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *child, struct rb_node *parent);
+static int rb_verify_node(struct rb_node *node, int *black_height);
 
 static void rb_left_rotate(struct rb_tree *tree, struct rb_node *node);
 static void rb_right_rotate(struct rb_tree *tree, struct rb_node *node);
 static void rb_transplant(struct rb_tree *tree, struct rb_node *old, struct rb_node *new);
-
 static int rb_red(struct rb_node *node);
 
 void rb_insert(struct rb_tree *tree, struct rb_node *to_insert)
@@ -228,6 +228,47 @@ static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *child, struct 
 		child->color = BLACK;
 }
 
+int rb_verify(struct rb_tree *tree)
+{
+	if (!tree)
+		return -1;
+
+	if (rb_red(tree->root))						/* tree root must be black */
+		return -1;
+
+	int black_height = 0;
+	return rb_verify_node(tree->root, &black_height);
+}
+
+static int rb_verify_node(struct rb_node *node, int *black_height)
+{
+	if (!node) {							/* all leaves are black */
+		*black_height = 1;
+		return 0;
+	}
+
+	if (node->color != RED && node->color != BLACK)			/* every node is either red or black */
+		return -1;
+
+	if (node->color == RED) {					/* red nodes must not have red children */
+		if (rb_red(node->left) || rb_red(node->right))
+			return -1;
+	}
+
+	int left_black_height = 0, right_black_height = 0;
+
+	if (rb_verify_node(node->left, &left_black_height) < 0)
+		return -1;
+
+	if (rb_verify_node(node->right, &right_black_height) < 0)
+		return -1;
+
+	if (left_black_height != right_black_height)			/* all simple paths from a node to descendant leaves */
+		return -1;						/* contain the same number of black nodes */
+
+	*black_height = left_black_height + (node->color == BLACK);
+	return 0;
+}
 
 static void rb_left_rotate(struct rb_tree *tree, struct rb_node *node)
 {
