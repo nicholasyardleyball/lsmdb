@@ -1,6 +1,12 @@
 #include "rbtree.h"
 
 static void rb_insert_fixup(struct rb_tree *tree, struct rb_node *node);
+static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *child, struct rb_node *parent);
+
+static void rb_left_rotate(struct rb_tree *tree, struct rb_node *node);
+static void rb_right_rotate(struct rb_tree *tree, struct rb_node *node);
+static void rb_transplant(struct rb_tree *tree, struct rb_node *old, struct rb_node *new);
+
 static int rb_red(struct rb_node *node);
 
 void rb_insert(struct rb_tree *tree, struct rb_node *to_insert)
@@ -89,6 +95,216 @@ static void rb_insert_fixup(struct rb_tree *tree, struct rb_node *node)
 	}
 
 	tree->root->color = BLACK;
+}
+
+void rb_delete(struct rb_tree *tree, struct rb_node *to_delete)
+{
+	struct rb_node *successor, *parent, *child;
+	successor = parent = child = 0;
+
+	int original_color = to_delete->color;
+
+	if (!to_delete->left) {						/* when 1 or fewer children, replace by child */
+		parent = to_delete->parent;
+		child = to_delete->right;
+		rb_transplant(tree, to_delete, child);
+	}
+
+	else if (!to_delete->right) {
+		parent = to_delete->parent;
+		child = to_delete->left;
+		rb_transplant(tree, to_delete, child);
+	}
+
+	else {								/* when 2 children, replace by successor */
+		successor = to_delete->right;
+
+		while(successor->left)
+			successor = successor->left;
+
+		child = successor->right;
+		original_color = successor->color;
+
+		if (successor == to_delete->right)
+			parent = successor;
+
+		else {							/* when successor deeper in tree, */
+			parent = successor->parent;			/* replace by its right child */
+			rb_transplant(tree, successor, child);
+
+			successor->right = to_delete->right;
+			successor->right->parent = successor;
+		}
+
+		rb_transplant(tree, to_delete, successor);		/* replace to_delete by successor */
+
+		successor->left = to_delete->left;
+		successor->left->parent = successor;
+
+		successor->color = to_delete->color;
+	}
+
+	if (original_color == BLACK)
+		rb_delete_fixup(tree, child, parent);
+}
+
+static void rb_delete_fixup(struct rb_tree *tree, struct rb_node *child, struct rb_node *parent)
+{
+	while (parent && !rb_red(child)) {
+		if (child == parent->left) {						/* left child */
+			struct rb_node *sibling = parent->right;
+
+			if (rb_red(sibling)) {						/* case 1: red sibling */
+				sibling->color = BLACK;
+				parent->color = RED;
+				rb_left_rotate(tree, parent);
+
+				sibling = parent->right;
+			}
+
+			if (!rb_red(sibling->left) && !rb_red(sibling->right)) {	/* case 2: black sibling */
+				sibling->color = RED;					/* with 2 black children */
+				child = parent;
+				parent = child->parent;
+			}
+
+			else {
+				if (!rb_red(sibling->right)) {				/* case 3: black sibling */
+					sibling->left->color = BLACK;			/* with red left child */
+					sibling->color = RED;
+					rb_right_rotate(tree, sibling);
+
+					sibling = parent->right;
+				}
+
+				sibling->color = parent->color;				/* case 4: black sibling */
+				parent->color = BLACK;					/* with red right child */
+				sibling->right->color = BLACK;
+				rb_left_rotate(tree, parent);
+
+				child = tree->root;
+				parent = child->parent;
+			}
+		}
+
+		else {									/* symmetrical when right child */
+			struct rb_node *sibling = parent->left;
+
+			if (rb_red(sibling)) {
+				sibling->color = BLACK;
+				parent->color = RED;
+				rb_right_rotate(tree, parent);
+
+				sibling = parent->left;
+			}
+
+			if (!rb_red(sibling->left) && !rb_red(sibling->right)) {
+				sibling->color = RED;
+				child = parent;
+				parent = child->parent;
+			}
+
+			else {
+				if (!rb_red(sibling->left)) {
+					sibling->right->color = BLACK;
+					sibling->color = RED;
+					rb_left_rotate(tree, sibling);
+
+					sibling = parent->left;
+				}
+
+				sibling->color = parent->color;
+				parent->color = BLACK;
+				sibling->left->color = BLACK;
+				rb_right_rotate(tree, parent);
+
+				child = tree->root;
+				parent = child->parent;
+			}
+		}
+	}
+
+	if (child)
+		child->color = BLACK;
+}
+
+
+static void rb_left_rotate(struct rb_tree *tree, struct rb_node *node)
+{
+	if (!node)
+		return;
+
+	struct rb_node *child = node->right;
+
+	if (!child)
+		return;
+
+	node->right = child->left;
+
+	if (child->left)
+		child->left->parent = node;
+
+	child->parent = node->parent;
+
+	if (!node->parent)
+		tree->root = child;
+
+	else if (node == node->parent->left)
+		node->parent->left = child;
+
+	else
+		node->parent->right = child;
+
+	child->left = node;
+	node->parent = child;
+}
+
+static void rb_right_rotate(struct rb_tree *tree, struct rb_node *node)
+{
+	if (!node)
+		return;
+
+	struct rb_node *child = node->left;
+
+	if (!child)
+		return;
+
+	node->left = child->right;
+
+	if (child->right)
+		child->right->parent = node;
+
+	child->parent = node->parent;
+
+	if (!node->parent)
+		tree->root = child;
+
+	else if (node == node->parent->left)
+		node->parent->left = child;
+
+	else
+		node->parent->right = child;
+
+	child->right = node;
+	node->parent = child;
+}
+
+static void rb_transplant(struct rb_tree *tree, struct rb_node *old, struct rb_node *new)
+{
+	if (!old)
+		return;
+
+	if (!old->parent)
+		tree->root = new;
+
+	else if (old == old->parent->left)
+		old->parent->left = new;
+
+	else
+		old->parent->right = new;
+
+	if (new)
+		new->parent = old->parent;
 }
 
 static int rb_red(struct rb_node *node)
