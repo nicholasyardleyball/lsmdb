@@ -1,5 +1,8 @@
 #include "rbtree.h"
 
+#define RED 0
+#define BLACK 1
+
 struct rb_node{
 	struct rb_node *parent, *left, *right;
 	uint16_t key;
